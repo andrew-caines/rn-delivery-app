@@ -46,7 +46,7 @@ const Login = ({ navigation }) => {
                 type='outline'
                 iconRight={true}
                 icon={() => <Feather name="chevrons-right" size={24} color="black" />}
-                onPress={() => navigation.navigate('bottomFlow')
+                onPress={() => navigation.navigate('bottomFlow', { screen: 'Feed' })
                 }
             />
             <View style={{ flexDirection: 'row' }}>
