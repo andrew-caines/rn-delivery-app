@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "rn-delivery",
-    "slug": "rn-delivery",
+    "name": "CareRx Delivery",
+    "slug": "carerx-delivery-app",
     "platforms": [
       "ios",
       "android",
@@ -23,6 +23,10 @@
     ],
     "ios": {
       "supportsTablet": true
+    },
+    "android": {
+      "package": "ca.carerx.deliveryapp",
+      "versionCode": 1
     }
   }
 }

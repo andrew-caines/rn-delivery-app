@@ -89,7 +89,7 @@ const DeliveryToHome = (props) => {
 
     return (
         <View style={{ marginHorizontal: 5 }}>
-            <Text h4>Select Home for Delivery</Text>
+            <Text style={{marginTop:5}} h4>Select Home for Delivery</Text>
             <Picker
                 selectedValue={home}
                 onValueChange={(value) => setHome(value)}
