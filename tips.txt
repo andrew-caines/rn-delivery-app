@@ -1,0 +1,2 @@
+Build with play store compat 
+expo build:android -t app-bundle
