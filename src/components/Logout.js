@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { GlobalStateContext } from '../context/globalState';
 /*
 This app will:  
 1.) Confirm they mean to logout.
@@ -11,11 +12,9 @@ This app will:
 */
 const Logout = (props) => {
     const navigation = useNavigation();
+    const { Logout } = useContext(GlobalStateContext);
     return (
-        <TouchableOpacity onPress={() => {
-            alert('This would delete you token and log you out, then return you to Login screen');
-            navigation.navigate("Login");
-        }}>
+        <TouchableOpacity onPress={() => Logout(navigation)}>
             <View style={{
                 flexDirection: 'row',
                 alignItems: 'center',

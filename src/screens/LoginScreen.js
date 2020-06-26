@@ -1,23 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, StyleSheet, Switch } from 'react-native';
 import { Text, Input, Button } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
+import { GlobalStateContext } from '../context/globalState';
 
 const Login = ({ navigation }) => {
-    const errorMessage = null;
-    const loading = false;
-    const serverOnline = true;
-    const [email, setEmail] = useState('');
+    const { state, Login } = useContext(GlobalStateContext);
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
     return (
         <View style={styles.container}>
             <Text h4 >Login to Delivery App v1.0</Text>
             <Input
-                leftIcon={<Feather name="mail" size={24} color="black" />}
-                label="Email"
-                value={email}
-                onChangeText={email => setEmail(email)}
+                leftIcon={<Feather name="user" size={24} color="black" />}
+                label="Username"
+                value={username}
+                onChangeText={username => setUsername(username)}
                 autoCapitalize='none'
                 autoCorrect={false}
             />
@@ -30,36 +29,35 @@ const Login = ({ navigation }) => {
                 autoCorrect={false}
                 secureTextEntry
             />
-            {errorMessage ? <Text style={styles.errorMessage}>{errorMessage} </Text> : null}
+            {state.loginFailure ? <Text style={styles.errorMessage}>{state.loginFailureMessage} </Text> : null}
             <Button
                 style={styles.buttonSpace}
                 title="Login"
                 raised
-                loading={loading}
-                onPress={() => onSubmit({ email, password })
-                }
-            />
-            <Button
-                title="Fake Successful Login "
-                raised
-                buttonStyle={{ backgroundColor: 'orange' }}
-                type='outline'
-                iconRight={true}
-                icon={() => <Feather name="chevrons-right" size={24} color="black" />}
-                onPress={() => navigation.navigate('bottomFlow', { screen: 'Feed' })
+                loading={state.loading}
+                onPress={() => Login(username, password, navigation)
                 }
             />
             <View style={{ flexDirection: 'row' }}>
                 <Text>Server Online:</Text>
                 <Switch
                     trackColor={{ false: "#767577", true: "#e0e0eb" }}
-                    thumbColor={serverOnline ? "#00e600" : "#cc2900"}
+                    thumbColor={state.serverOnline ? "#00e600" : "#cc2900"}
                     disabled={true}
-                    value={serverOnline}
+                    value={state.serverOnline}
                 />
-                {!serverOnline ? <Text>Offline. Please contact Helpdesk</Text> : null}
+                {!state.serverOnline ? <Text>Offline. Please contact Helpdesk</Text> : null}
             </View>
-
+            <View style={{ flexDirection: 'row' }}>
+                <Text>Location Permissions Granted:</Text>
+                <Switch
+                    trackColor={{ false: "#767577", true: "#e0e0eb" }}
+                    thumbColor={state.locationHasPermission ? "#00e600" : "#cc2900"}
+                    disabled={true}
+                    value={state.locationHasPermission}
+                />
+            </View>
+            {!state.locationHasPermission ? <View><Text style={{ color: 'red' }}>You must grant this program access to your Location!</Text></View> : null}
 
         </View>
     );

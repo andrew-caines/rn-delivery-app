@@ -26,7 +26,7 @@ const FeedScreen = (props) => {
         const SubTitle = () => {
             return priority === 'high' ? <Text style={{ fontWeight: '100', color: 'red' }}>High Priority, please review</Text> : null
         }
-        
+
         return (
             <TouchableOpacity onPress={() => {
                 //set the ID as selectedItem, toggle Modal visibilty

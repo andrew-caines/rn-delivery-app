@@ -1,14 +1,12 @@
 import React from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Logo from '../svgs/LogoSVG';
 
 const SiteHeaer = () => {
     return (
-        <Image
-            style={styles.logo}
-            source={require('../../assets/carerx-new-first.png')}
-            resizeMethod="resize"
-            resizeMode="contain"
-        />
+        <View style={{ position: 'relative',  right: 75 }}>
+            <Logo />
+        </View>
     );
 }
 
