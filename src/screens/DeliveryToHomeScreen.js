@@ -1,17 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, StyleSheet, Modal, Image, ToastAndroid, Vibration } from 'react-native';
 import { Button, Input, Text, } from 'react-native-elements';
 import { Picker } from '@react-native-community/picker';
 import { Feather } from '@expo/vector-icons';
 import SignaturePad from '../components/SignaturePad';
+import { GlobalStateContext } from '../context/globalState';
+import serverAPI from '../api/server';
 //TODOS
 //Introduce a reducer to make clearing, and setting easier.
 const ERROR_PATTERN = [400, 1600, 400, 1600, 400, 800];
 const SUCCESS_PATTERN = [400, 400];
 
 const DeliveryToHome = (props) => {
-
+    const { state, setClientData } = useContext(GlobalStateContext);
     const [home, setHome] = useState({ label: '', value: '' });
+    const [homes, setHomes] = useState([]);
     const [signee, setSignee] = useState('');
     const [pickItems, setPickItems] = useState([]);
     const [bagsDropped, setBagsDropped] = useState(0);
@@ -30,32 +33,31 @@ const DeliveryToHome = (props) => {
 
     //On Did Mount
     useEffect(() => {
-        const listOfHomes = [
-            { label: 'Fake home 1', value: 'UID0002' },
-            { label: 'Fake home 2', value: 'UID0001' },
-            { label: 'Fake home 3', value: 'UID0001' },
-            { label: 'Fake home 4', value: 'UID0001' },
-            { label: 'Fake home 5', value: 'UID0001' },
-            { label: 'Fake home 6', value: 'UID0001' },
-            { label: 'Fake home 7', value: 'UID0001' },
-            { label: 'Fake home 8', value: 'UID0001' },
-            { label: 'Fake home 9', value: 'UID0001' },
-            { label: 'Fake home 10', value: 'UID0001' },
-            { label: 'Fake home 11', value: 'UID0001' },
-            { label: 'Fake home 12', value: 'UID0001' },
-            { label: 'Fake home 13', value: 'UID0001' },
-            { label: 'Fake home 14', value: 'UID0001' },
-            { label: 'Fake home 15', value: 'UID0001' },
-        ];
-        const Items = listOfHomes.map((item, index) => {
-            return (<Picker.Item key={index} label={item.label} value={item.value} />);
-        });
-        setPickItems(Items);
-    }, [])
+        //TODO fix canceling request on navigation away.
+
+        async function getHomes() {
+            try {
+                let response = await serverAPI.get('/homesByPharmacy');
+                setHomes(response.data);
+
+                const Items = response.data.map((item, index) => {
+                    return (<Picker.Item key={item.ID} label={item.name} value={item.ID} />);
+                });
+                setPickItems(Items);
+            } catch (e) {
+                //There is a condition, since this reacts to changes in state (login/logout) that it will attempt to grab this when a person logs out, and since that route
+                // is protected it will throw a 401. This just handles this rejection. it swallows it.
+                //console.log(`Got error while grabbing homes: ${e}`);
+                return;
+            }
+        }
+        getHomes();
+
+    }, [state])
 
     //Helper Functions
     const handleSignature = (signature) => {
-        console.log(`Got signature data`);
+        //console.log(`Got signature data`);
         setSigModalVis(false);
         setSignature(signature);
     }
@@ -89,7 +91,7 @@ const DeliveryToHome = (props) => {
 
     return (
         <View style={{ marginHorizontal: 5 }}>
-            <Text style={{marginTop:5}} h4>Select Home for Delivery</Text>
+            <Text style={{ marginTop: 5 }} h4>Select Home for Delivery</Text>
             <Picker
                 selectedValue={home}
                 onValueChange={(value) => setHome(value)}

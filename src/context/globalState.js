@@ -50,9 +50,17 @@ export const Provider = (props) => {
             } else {
                 dispatch({ type: 'setLocationPermission', payload: true });
             }
-            //STUB: FOR NOW HARDCODE SERVER ONLINE
-            let result = await serverAPI.
-            dispatch({ type: 'setServerStatus', payload: true });
+            try {
+                let result = await serverAPI.get('/status');
+                if (result.data.status) {
+                    dispatch({ type: 'setServerStatus', payload: true });
+                } else {
+                    dispatch({ type: 'setServerStatus', payload: false });
+                }
+            } catch (e) {
+                dispatch({ type: 'setServerStatus', payload: false });
+                return;
+            }
 
         }
 
@@ -115,9 +123,13 @@ export const Provider = (props) => {
         }
     }
 
+    const setClientData = async () => {
+        //This function is how you stash client data between a home/client screen and failure to deliver screen
+    };
+
     //Memonized value to prevent massive repaints.
     const value = React.useMemo(() => {
-        return { state, tryLocalLogin, Login, Logout };
+        return { state, tryLocalLogin, Login, Logout, };
     }, [state]);
 
     return (
