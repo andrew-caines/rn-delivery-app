@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, View, Text, StyleSheet, FlatList, Modal, TouchableOpacity } from 'react-native';
+import { Button, View, Text, StyleSheet, FlatList, Modal, TouchableOpacity, RefreshControl } from 'react-native';
 import { ListItem } from 'react-native-elements';
 
 const FeedScreen = (props) => {
@@ -7,7 +7,14 @@ const FeedScreen = (props) => {
     const [feed, setFeed] = useState([])
     const [selectedItem, setSelectedItem] = useState('');
     const [modalVis, setModalVis] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
+    //Helper Function, to be deleted later
+    function wait(timeout) {
+        return new Promise(resolve => {
+            setTimeout(resolve, timeout);
+        });
+    }
     useEffect(() => {
         //This is a fixture for now, but in future this would be where feed is populated.
         // Will need a hook to onnavigate to this page to do a auto-refresh.
@@ -20,6 +27,11 @@ const FeedScreen = (props) => {
         ];
         setFeed(fixture);
     }, []);
+
+    const onRefresh = React.useCallback(() => {
+        //This would be where you go out and grab the Feed data!
+        wait(5000).then(() => setRefreshing(false));
+    }, [refreshing]);
 
     const RowDisplay = ({ date, title, id, priority }) => {
 
@@ -47,6 +59,7 @@ const FeedScreen = (props) => {
     return (
         <View>
             <FlatList
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 data={feed}
                 keyExtractor={item => item.id}
                 renderItem={({ item }) => <RowDisplay date={item.date} title={item.title} id={item.id} priority={item.priority} />}

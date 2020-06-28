@@ -12,7 +12,9 @@ const initalState = {
     locationHasPermission: false,
     loading: false,
     loginFailureMessage: '',
-    loginFailure: false
+    loginFailure: false,
+    clientName: '',
+    clientAddress: ''
 
 };
 
@@ -28,6 +30,8 @@ const reducer = (state, action) => {
             return { ...state, token: action.payload.token, loginFailure: false };
         case 'loginFailure':
             return { ...state, loginFailure: true, loginFailureMessage: action.payload };
+        case 'updateClientData':
+            return { ...state, clientName: action.payload.name, clientAddress: action.payload.address };
         default:
             return state;
     }
@@ -123,13 +127,20 @@ export const Provider = (props) => {
         }
     }
 
-    const setClientData = async () => {
+    const setClientData = async ({ name, address }) => {
         //This function is how you stash client data between a home/client screen and failure to deliver screen
+        console.log(`setClientdata called with : ${name} ${address}`);
+        dispatch({ type: 'updateClientData', payload: { name, address } });
     };
+
+    const getClientData = () => {
+        console.log(`getClientData called sending down: ${state.clientName} & ${state.clientAddress}`);
+        return { name: state.clientName, address: state.clientAddress };
+    }
 
     //Memonized value to prevent massive repaints.
     const value = React.useMemo(() => {
-        return { state, tryLocalLogin, Login, Logout, };
+        return { state, tryLocalLogin, Login, Logout, setClientData, getClientData };
     }, [state]);
 
     return (
