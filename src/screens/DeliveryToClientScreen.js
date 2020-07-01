@@ -1,24 +1,130 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Image, Modal } from 'react-native';
+import React, { useRef, useState, useContext, useReducer, useEffect } from 'react';
+import { View, StyleSheet, Image, Modal, ToastAndroid, Vibration } from 'react-native';
+import * as Location from 'expo-location';
 import { Button, Input, Text, } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
 import SignaturePad from '../components/SignaturePad';
+import { GlobalStateContext } from '../context/globalState';
+import { ERROR_PATTERN, SUCCESS_PATTERN } from '../constants/app-wide';
+import serverAPI from '../api/server';
 
-const DeliveryToClient = (props) => {
-    const [signature, setSignature] = useState(null);
-    const [sigModalVis, setSigModalVis] = useState(false);
+const initalState = {
+    name: '',
+    address: '',
+    signee: '',
+    money: 0,
+    signature: null,
+    sigModalVisible: false,
+    formIsValid: false,
+};
+
+function reducer(state, action) {
+    switch (action.type) {
+        case 'updateValue': //This will handle updating any indiviudal value, so dont need to make an action type for each update
+            return { ...state, [action.payload.key]: action.payload.value };
+        case 'toggleSignatureModal':
+            return { ...state, sigModalVisible: !state.sigModalVisible };
+        case 'setFormIsValid':
+            return { ...state, formIsValid: action.payload };
+        case 'clearForm':
+            return initalState;
+        default:
+            return state;
+    }
+}
+
+const DeliveryToClient = ({ navigation }) => {
+
+    const { setClientData } = useContext(GlobalStateContext);
+    const [state, dispatch] = useReducer(reducer, initalState);
+    const [loading, setLoading] = useState(false);
+
     //Refs
     const nameInput = useRef();
     const addressInput = useRef();
     const codInput = useRef();
     const signeeInput = useRef();
 
+    useEffect(() => {
+        //Each time a value is updated, check to see if form is valid enough to complete!
+        //Between items dropped off, the value must be greater than 1 (atleast 1 bin or bag dropped off)
+        //There must be a minimum of 3 characters in the signee name field
+        //There must be signature data
+        //Amount of items picked up, can be 0 or more
+        // Must not update state, if its already true or false, only update when there is a change.
+        if ((state.name !== null && state.name !== '') && (state.address !== null && state.address.length > 5) && (state.signee.length > 3) && state.signature) {
+            if (!state.formIsValid) {
+                //Only dispatch if it was previously invalid, to prevent infinite loops
+                dispatch({ type: 'setFormIsValid', payload: true });
+            }
+        } else {
+            if (state.formIsValid) {
+                //It was previously true, toggle to false, to prevent infinite reloops
+                dispatch({ type: 'setFormIsValid', payload: false });
+            }
+        }
+    }, [state]);
+
+    const handleComplete = async () => {
+        setLoading(true);
+        const location = await Location.getCurrentPositionAsync({});
+
+        const body = {
+            type: 'Client',
+            address: state.address,
+            client_name: state.name,
+            signee: state.signee,
+            signature: state.signature,
+            money: state.money,
+            location: JSON.stringify(location)
+        };
+        try {
+            const response = await serverAPI.post('/saveDelivery', body);
+            if (response.data.success) {
+                setLoading(false);
+                ToastAndroid.show(`💾 Delivery Saved! `, ToastAndroid.SHORT);
+                Vibration.vibrate(SUCCESS_PATTERN);
+                clearForm();
+            } else {
+                setLoading(false);
+                console.log(`Got into the else: response.data.message: ${response.data.message}`);
+                ToastAndroid.show(`💣 ERROR SAVING: ${response.data.message}`, ToastAndroid.SHORT);
+                Vibration.vibrate(ERROR_PATTERN);
+            }
+
+        } catch (e) {
+            console.log(`💣 Got into trapped error in saving delivery: ${e}`);
+            setLoading(false);
+            Vibration.vibrate(ERROR_PATTERN);
+        }
+
+
+    }
+    const handleRefused = () => {
+        //set the client data to globalState, then navigate to refused page
+        if ((state?.name && state.name !== '') && (state?.address && state.address !== '')) {
+            setClientData({ name: state.name, address: state.address });
+            navigation.navigate('Failure To Deliver');
+        } else {
+            ToastAndroid.show(`You must first create a delivery, to fail...`, ToastAndroid.SHORT);
+            Vibration.vibrate(ERROR_PATTERN);
+        }
+    }
+
     //Helper Functions
     const handleSignature = (signature) => {
-        console.log(`Got signature data`);
-        setSigModalVis(false);
-        setSignature(signature);
-    };
+        dispatch({ type: 'updateValue', payload: { key: 'signature', value: signature } });
+        dispatch({ type: 'toggleSignatureModal' });
+    }
+
+    const clearForm = () => {
+        //The element has its own clear method.
+        nameInput.current.clear();
+        addressInput.current.clear();
+        codInput.current.clear();
+        signeeInput.current.clear();
+        dispatch({ type: 'clearForm' });
+    }
 
     return (
         <View>
@@ -29,7 +135,7 @@ const DeliveryToClient = (props) => {
                 placeholder="Enter Client's name"
                 label="Name"
                 leftIcon={<Feather name='user' size={24} color="black" />}
-                onChangeText={val => val}
+                onChangeText={(value) => dispatch({ type: 'updateValue', payload: { key: 'name', value: value } })}
             />
             <Input
                 ref={addressInput}
@@ -37,7 +143,7 @@ const DeliveryToClient = (props) => {
                 placeholder="Enter Delivery Address"
                 label="Address"
                 leftIcon={<Feather name='home' size={24} color="black" />}
-                onChangeText={val => val}
+                onChangeText={(value) => dispatch({ type: 'updateValue', payload: { key: 'address', value: value } })}
             />
             <Input
                 ref={codInput}
@@ -46,20 +152,20 @@ const DeliveryToClient = (props) => {
                 label="C.O.D"
                 leftIcon={<Feather name='dollar-sign' size={24} color="black" />}
                 keyboardType='number-pad'
-                onChangeText={val => val}
+                onChangeText={(value) => dispatch({ type: 'updateValue', payload: { key: 'money', value: value } })}
             />
             <Input
                 ref={signeeInput}
                 label="Signee"
                 leftIcon={<Feather name='pen-tool' size={24} color="black" />}
-                onChangeText={val => val}
+                onChangeText={(value) => dispatch({ type: 'updateValue', payload: { key: 'signee', value: value } })}
             />
 
-            {signature ?
-                <Image resizeMode='contain' source={{ uri: signature }} style={{ width: 400, height: 200 }} />
+            {state.signature ?
+                <Image resizeMode='contain' source={{ uri: state.signature }} style={{ width: 400, height: 200 }} />
                 :
-                <><Button title="Capture Signature" onPress={() => { setSigModalVis(!sigModalVis) }} />
-                    <Modal transparent visible={sigModalVis}>
+                <><Button title="Capture Signature" onPress={() => dispatch({ type: 'toggleSignatureModal' })} />
+                    <Modal transparent visible={state.sigModalVisible}>
                         <SignaturePad text='Please sign to confirm delivery' onOK={handleSignature} />
                     </Modal>
                     <View style={{ width: 400, height: 150 }}></View>
@@ -74,14 +180,18 @@ const DeliveryToClient = (props) => {
                     buttonStyle={{ backgroundColor: 'orange' }}
                     containerStyle={{ width: '35%' }}
                     icon={<Feather name="thumbs-down" size={24} color="black" />}
+                    onPress={handleRefused}
                 />
                 <Button
+                    disabled={!state.formIsValid}
+                    loading={loading}
                     raised
                     title='Complete '
                     titleStyle={{ paddingLeft: 15 }}
                     buttonStyle={{ backgroundColor: 'green' }}
                     containerStyle={{ width: '55%' }}
                     icon={<Feather name="save" size={24} color="black" />}
+                    onPress={handleComplete}
                 />
             </View>
         </View>

@@ -1,12 +1,15 @@
-import React, { useRef, useState, useContext, useReducer } from 'react';
+import React, { useRef, useContext, useReducer, useEffect } from 'react';
 import RadioButtonRN from 'radio-buttons-react-native';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ToastAndroid, Vibration } from 'react-native';
 import { Button, ButtonGroup, Input, Text, } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
 import { buttons_group } from '../components/FailureToDeliverButtons';
 import { GlobalStateContext } from '../context/globalState';
 import { useFocusEffect } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import * as Location from 'expo-location';
+import serverAPi from '../api/server';
+import { ERROR_PATTERN, SUCCESS_PATTERN } from '../constants/app-wide';
 
 const initialState = {
     name: '',
@@ -14,11 +17,16 @@ const initialState = {
     status: '',
     reason: '',
     selectedIndex: 0,
-
+    isValid: false,
+    loading: false,
 };
 
 function reducer(state, action) {
     switch (action.type) {
+        case 'setValid':
+            return { ...state, isValid: action.payload };
+        case 'setLoading':
+            return { ...state, loading: action.payload };
         case 'updateValue':
             return { ...state, [action.payload.key]: action.payload.value };
         case 'setInital':
@@ -49,7 +57,7 @@ function reducer(state, action) {
 
 const FailureToDeliver = (props) => {
     const [state, dispatch] = useReducer(reducer, initialState);
-    const { state: gstate, getClientData,setClientData } = useContext(GlobalStateContext);
+    const { state: gstate, getClientData, setClientData } = useContext(GlobalStateContext);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -57,6 +65,19 @@ const FailureToDeliver = (props) => {
             dispatch({ type: 'setInital', payload: { name, address } });
         }, [gstate])
     )
+    //Form Validation
+    useEffect(() => {
+        if (state.name.length > 3 && state.address.length > 5 && state.reason.length > 1 && state.status.length > 1) {
+            if (state.isValid === false) {
+                dispatch({ type: 'setValid', payload: true });
+            }
+        } else {
+            if (state.isValid === true) {
+                dispatch({ type: 'setValid', payload: false });
+            }
+        }
+    }, [state]);
+
     //Refs
     const nameInput = useRef();
     const addressInput = useRef();
@@ -69,11 +90,38 @@ const FailureToDeliver = (props) => {
         }
     ];
 
-    const handleComplete = () => {
+    const handleComplete = async () => {
         console.log(`${JSON.stringify(state)}`);
-        nameInput.current.clear();
-        addressInput.current.clear();
-        dispatch({ type: 'clearForm' });
+        dispatch({ type: 'setLoading', payload: true });
+        let location = await Location.getCurrentPositionAsync({});
+        try {
+            const body = {
+                name: state.name,
+                address: state.address,
+                status: state.status,
+                reason: state.reason,
+                location
+            }
+            let result = await serverAPi.post('/saveFailure', body);
+            if (result.data.success) {
+                //After success
+                ToastAndroid.show(`💾 Failure to Deliver Saved.`, ToastAndroid.SHORT);
+                Vibration.vibrate(SUCCESS_PATTERN);
+                nameInput.current.clear();
+                addressInput.current.clear();
+                dispatch({ type: 'clearForm' });
+                dispatch({ type: 'setLoading', payload: false });
+            } else {
+                dispatch({ type: 'setLoading', payload: false });
+                ToastAndroid.show(`💣 ERROR SAVING: ${result.data.message}`, ToastAndroid.SHORT);
+                Vibration.vibrate(ERROR_PATTERN);
+            }
+
+        } catch (e) {
+            dispatch({ type: 'setLoading', payload: false });
+            ToastAndroid.show(`💣 ERROR SAVING: ${e}`, ToastAndroid.SHORT);
+            Vibration.vibrate(ERROR_PATTERN);
+        }
     }
 
     const clearForm = () => {
@@ -85,7 +133,7 @@ const FailureToDeliver = (props) => {
         <View>
             <View style={{ flexDirection: 'row' }}>
                 <Text style={{ marginTop: 5, flexGrow: 4 }} h4>Failure to Deliver</Text>
-                <TouchableOpacity style={{ marginTop: 5, flexGrow: 2 }}onPress={clearForm}>
+                <TouchableOpacity style={{ marginTop: 5, flexGrow: 2 }} onPress={clearForm}>
                     <Text ><Feather name="trash-2" size={25} color="#F08080" />Clear Form</Text>
                 </TouchableOpacity>
 
@@ -133,6 +181,8 @@ const FailureToDeliver = (props) => {
             </View>
             <Button
                 raised
+                disabled={!state.isValid}
+                loading={state.loading}
                 title='Complete '
                 titleStyle={{ paddingLeft: 15 }}
                 buttonStyle={{ backgroundColor: 'green' }}

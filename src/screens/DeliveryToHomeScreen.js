@@ -7,9 +7,8 @@ import SignaturePad from '../components/SignaturePad';
 import { GlobalStateContext } from '../context/globalState';
 import serverAPI from '../api/server';
 import * as Location from 'expo-location';
+import { ERROR_PATTERN, SUCCESS_PATTERN } from '../constants/app-wide';
 
-const ERROR_PATTERN = [400, 1600, 400, 1600, 400, 800];
-const SUCCESS_PATTERN = [400, 400];
 
 const initalState = {
     home: { ID: '', address: '', name: '' },
@@ -30,7 +29,6 @@ function reducer(state, action) {
         case 'toggleSignatureModal':
             return { ...state, sigModalVisible: !state.sigModalVisible };
         case 'setFormIsValid':
-            console.log(`Form was set to: ${action.payload}`);
             return { ...state, formIsValid: action.payload };
         case 'clearForm':
             return initalState;
@@ -117,7 +115,6 @@ const DeliveryToHome = ({ navigation }) => {
     const handleComplete = async () => {
         setLoading(true);
         let location = await Location.getCurrentPositionAsync({});
-        console.log(`location:" ${JSON.stringify(location)}`)
 
         const body = {
             type: 'Home',
@@ -157,8 +154,13 @@ const DeliveryToHome = ({ navigation }) => {
 
     const handleRefused = () => {
         //set the client data to globalState, then navigate to refused page
-        setClientData({ name: state.home.name, address: state.home.address });
-        navigation.navigate('Failure To Deliver');
+        if ((state?.home?.name && state.home.name !== '') && (state?.home?.address && state.home.address !== '')) {
+            setClientData({ name: state.home.name, address: state.home.address });
+            navigation.navigate('Failure To Deliver');
+        } else {
+            ToastAndroid.show(`You must first create a delivery, to fail...`, ToastAndroid.SHORT);
+            Vibration.vibrate(ERROR_PATTERN);
+        }
     }
 
     const refreshHomes = () => {
