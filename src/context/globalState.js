@@ -127,6 +127,16 @@ export const Provider = (props) => {
         }
     }
 
+    const setLocationPermission = async () => {
+
+        let { status } = await Location.requestPermissionsAsync();
+        if (status !== 'granted') {
+            dispatch({ type: 'locationPermission', payload: true })
+        } else {
+            dispatch({ type: 'locationPermission', payload: false })
+        }
+    }
+
     const setClientData = async ({ name, address }) => {
         //This function is how you stash client data between a home/client screen and failure to deliver screen
         console.log(`setClientdata called with : ${name} ${address}`);
@@ -140,7 +150,7 @@ export const Provider = (props) => {
 
     //Memonized value to prevent massive repaints.
     const value = React.useMemo(() => {
-        return { state, tryLocalLogin, Login, Logout, setClientData, getClientData };
+        return { state, tryLocalLogin, Login, Logout, setClientData, getClientData, setLocationPermission };
     }, [state]);
 
     return (

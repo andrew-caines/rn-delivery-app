@@ -1,11 +1,16 @@
 import React, { useEffect, useContext } from 'react';
 import { GlobalStateContext } from '../context/globalState';
+import * as Location from 'expo-location';
 
 const ResolveAuth = ({ navigation }) => {
 
-    const { tryLocalLogin } = useContext(GlobalStateContext);
+    const { tryLocalLogin, setLocationPermission } = useContext(GlobalStateContext);
     useEffect(() => {
-        //Look for cached login token
+        (async () => {
+            let { status } = await Location.requestPermissionsAsync();
+        })();
+        //Look for cached login token & request Location Permission!
+        setLocationPermission();
         tryLocalLogin(navigation);
     }, []);
 

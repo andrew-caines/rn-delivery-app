@@ -3,11 +3,19 @@ import { View, StyleSheet, Switch } from 'react-native';
 import { Text, Input, Button } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
 import { GlobalStateContext } from '../context/globalState';
+import * as Location from 'expo-location';
 
 const Login = ({ navigation }) => {
     const { state, Login } = useContext(GlobalStateContext);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+
+    const retryPermissons = async () => {
+
+        let { status } = await Location.requestPermissionsAsync();
+        if (status !== 'granted') {
+        }
+    }
 
     return (
         <View style={styles.container}>
@@ -57,7 +65,12 @@ const Login = ({ navigation }) => {
                     value={state.locationHasPermission}
                 />
             </View>
-            {!state.locationHasPermission ? <View><Text style={{ color: 'red' }}>You must grant this program access to your Location!</Text></View> : null}
+            {!state.locationHasPermission ?
+                <View style={{ flexDirection: 'row' }}>
+                    <Text style={{ color: 'red' }}>You must grant this program access to your Location!</Text>
+                    <Feather name="refresh-cw" size={24} color="black" onPress={retryPermissons} />
+                </View>
+                : null}
 
         </View>
     );
