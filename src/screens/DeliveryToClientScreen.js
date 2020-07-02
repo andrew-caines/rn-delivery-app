@@ -38,12 +38,29 @@ const DeliveryToClient = ({ navigation }) => {
     const { setClientData } = useContext(GlobalStateContext);
     const [state, dispatch] = useReducer(reducer, initalState);
     const [loading, setLoading] = useState(false);
-
+    const [locationPermission, setLocationPermission] = useState(false);
+    const [locModalVis, setLocModalVis] = useState(false);
     //Refs
     const nameInput = useRef();
     const addressInput = useRef();
     const codInput = useRef();
     const signeeInput = useRef();
+
+    useEffect(() => {
+        //A quick check to see if Locations is enabled!
+        async function requestPermissions() {
+            let { status } = await Location.requestPermissionsAsync();
+            if (status !== 'granted') {
+                //Show a popup letting them know Location is required!
+                setLocationPermission(false);
+                setLocModalVis(true);
+            } else {
+                setLocationPermission(true);
+            }
+        }
+
+        requestPermissions();
+    }, []);
 
     useEffect(() => {
         //Each time a value is updated, check to see if form is valid enough to complete!
@@ -66,6 +83,7 @@ const DeliveryToClient = ({ navigation }) => {
     }, [state]);
 
     const handleComplete = async () => {
+
         setLoading(true);
         const location = await Location.getCurrentPositionAsync({});
 
@@ -183,7 +201,7 @@ const DeliveryToClient = ({ navigation }) => {
                     onPress={handleRefused}
                 />
                 <Button
-                    disabled={!state.formIsValid}
+                    disabled={!state.formIsValid || !locationPermission}
                     loading={loading}
                     raised
                     title='Complete '
@@ -194,9 +212,32 @@ const DeliveryToClient = ({ navigation }) => {
                     onPress={handleComplete}
                 />
             </View>
+            <Modal visible={locModalVis} animationType="fade" transparent on>
+                <View style={styles.modalView}>
+                    <Feather name="alert-triangle" size={24} color="black" />
+                    <Text>Location Permissions are Required to use this Application</Text>
+                    <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings > Apps > CareRX Delivery settings.</Text>
+                </View>
+            </Modal>
         </View>
     );
 }
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+    modalView: {
+        margin: 20,
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5
+    },
+});
 
 export default DeliveryToClient;

@@ -44,6 +44,8 @@ const DeliveryToHome = ({ navigation }) => {
     const [pickItems, setPickItems] = useState([]);
     const [refresh, setRefresh] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [locationPermission, setLocationPermission] = useState(false);
+    const [locModalVis, setLocModalVis] = useState(false);
 
     //Refs
     const bagd = useRef();
@@ -51,6 +53,22 @@ const DeliveryToHome = ({ navigation }) => {
     const bagp = useRef();
     const binp = useRef();
     const sign = useRef();
+
+    useEffect(() => {
+        //A quick check to see if Locations is enabled!
+        async function requestPermissions() {
+            let { status } = await Location.requestPermissionsAsync();
+            if (status !== 'granted') {
+                //Show a popup letting them know Location is required!
+                setLocationPermission(false);
+                setLocModalVis(true);
+            } else {
+                setLocationPermission(true);
+            }
+        }
+
+        requestPermissions();
+    }, []);
 
     //On Did Mount
     useEffect(() => {
@@ -96,6 +114,7 @@ const DeliveryToHome = ({ navigation }) => {
         }
     }, [state]);
 
+  
     //Helper Functions
     const handleSignature = (signature) => {
         dispatch({ type: 'updateValue', payload: { key: 'signature', value: signature } });
@@ -249,7 +268,7 @@ const DeliveryToHome = ({ navigation }) => {
                     onPress={handleRefused}
                 />
                 <Button
-                    disabled={!state.formIsValid}
+                    disabled={!state.formIsValid || !locationPermission}
                     loading={loading}
                     raised
                     title='Complete '
@@ -260,6 +279,13 @@ const DeliveryToHome = ({ navigation }) => {
                     onPress={handleComplete}
                 />
             </View>
+            <Modal visible={locModalVis} animationType="fade" transparent on>
+                <View style={styles.modalView}>
+                    <Feather name="alert-triangle" size={24} color="black" />
+                    <Text>Location Permissions are Required to use this Application</Text>
+                    <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings > Apps > CareRX Delivery settings.</Text>
+                </View>
+            </Modal>
         </View >
     );
 }
