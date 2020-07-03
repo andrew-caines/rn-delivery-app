@@ -1,19 +1,28 @@
 import React, { useState, useContext } from 'react';
-import { View, StyleSheet, Switch } from 'react-native';
+import { View, StyleSheet, Switch, Modal } from 'react-native';
 import { Text, Input, Button } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
 import { GlobalStateContext } from '../context/globalState';
 import * as Location from 'expo-location';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 const Login = ({ navigation }) => {
-    const { state, Login } = useContext(GlobalStateContext);
+    const { state, Login, setLocationPermission } = useContext(GlobalStateContext);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [locPermission, setLocPermission] = useState(false);
+    const [locModalVis, setLocModalVis] = useState(false);
 
     const retryPermissons = async () => {
 
-        let { status } = await Location.requestPermissionsAsync();
+        let { status } = await Location.requestPermissionsAsync({});
         if (status !== 'granted') {
+            const location = await Location.getCurrentPositionAsync({});
+            setLocationPermission(true);
+            setLocPermission(true);
+        } else {
+            setLocationPermission(false);
+            setLocPermission(false);
         }
     }
 
@@ -68,10 +77,21 @@ const Login = ({ navigation }) => {
             {!state.locationHasPermission ?
                 <View style={{ flexDirection: 'row' }}>
                     <Text style={{ color: 'red' }}>You must grant this program access to your Location!</Text>
-                    <Feather name="refresh-cw" size={24} color="black" onPress={retryPermissons} />
+                    <TouchableOpacity onPress={() => retryPermissons()}>
+                        <Feather name="refresh-cw" size={24} color="black" />
+                    </TouchableOpacity>
                 </View>
                 : null}
-
+            <Modal visible={locModalVis} animationType="fade" transparent onDismiss={() => setLocModalVis(false)} onRequestClose={() => setLocModalVis(false)} >
+                <View style={styles.locModal}>
+                    <View style={styles.modalView}>
+                        <Feather name="alert-triangle" size={72} color="black" />
+                        <Text>Location Permissions are Required to use this Application</Text>
+                        <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings > Apps > CareRX Delivery settings.</Text>
+                        <Button title="Understood" onPress={() => setLocModalVis(false)} />
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -91,6 +111,13 @@ const styles = StyleSheet.create({
         marginTop: 15,
         marginBottom: 10
     },
+    locModal: {
+        margin: 20,
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignContent: 'center'
+    }
 });
 
 export default Login;

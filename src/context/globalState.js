@@ -127,15 +127,9 @@ export const Provider = (props) => {
         }
     }
 
-    const setLocationPermission = async () => {
-
-        let { status } = await Location.requestPermissionsAsync();
-        if (status !== 'granted') {
-            dispatch({ type: 'locationPermission', payload: true })
-        } else {
-            dispatch({ type: 'locationPermission', payload: false })
-        }
-    }
+    const setLocationPermission = async (value) => {
+        dispatch({ type: 'locationPermission', payload: value });
+    };
 
     const setClientData = async ({ name, address }) => {
         //This function is how you stash client data between a home/client screen and failure to deliver screen

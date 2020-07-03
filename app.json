@@ -7,7 +7,7 @@
       "android",
       "web"
     ],
-    "version": "1.0.2",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -26,8 +26,12 @@
     },
     "android": {
       "package": "ca.carerx.deliveryapp",
-      "versionCode": 5,
-      "permissions": []
+      "versionCode": 7,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE"
+      ]
     }
   }
 }

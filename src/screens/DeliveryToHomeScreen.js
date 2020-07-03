@@ -114,7 +114,7 @@ const DeliveryToHome = ({ navigation }) => {
         }
     }, [state]);
 
-  
+
     //Helper Functions
     const handleSignature = (signature) => {
         dispatch({ type: 'updateValue', payload: { key: 'signature', value: signature } });
@@ -279,11 +279,14 @@ const DeliveryToHome = ({ navigation }) => {
                     onPress={handleComplete}
                 />
             </View>
-            <Modal visible={locModalVis} animationType="fade" transparent on>
-                <View style={styles.modalView}>
-                    <Feather name="alert-triangle" size={24} color="black" />
-                    <Text>Location Permissions are Required to use this Application</Text>
-                    <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings > Apps > CareRX Delivery settings.</Text>
+            <Modal visible={locModalVis} animationType="fade" transparent onDismiss={() => setLocModalVis(false)} onRequestClose={() => setLocModalVis(false)} >
+                <View style={styles.locModal}>
+                    <View style={styles.modalView}>
+                        <Feather name="alert-triangle" size={72} color="black" />
+                        <Text>Location Permissions are Required to use this Application</Text>
+                        <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings > Apps > CareRX Delivery settings.</Text>
+                        <Button title="Understood" onPress={() => setLocModalVis(false)} />
+                    </View>
                 </View>
             </Modal>
         </View >
@@ -295,6 +298,28 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignContent: 'center',
     },
+    modalView: {
+        margin: 20,
+        backgroundColor: "white",
+        borderRadius: 20,
+        padding: 35,
+        alignItems: "center",
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5
+    },
+    locModal: {
+        margin: 20,
+        flex: 1,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignContent: 'center'
+    }
 });
 
 export default DeliveryToHome;
