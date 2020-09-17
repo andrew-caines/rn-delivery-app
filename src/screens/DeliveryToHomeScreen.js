@@ -36,6 +36,9 @@ function reducer(state, action) {
             return state;
     }
 }
+async function getHomes() { 
+
+}
 
 const DeliveryToHome = ({ navigation }) => {
 
@@ -70,7 +73,29 @@ const DeliveryToHome = ({ navigation }) => {
         requestPermissions();
     }, []);
 
-    //On Did Mount
+    //On Did Mount TODO: Reduce the onMount and on refresh to a single function.
+    useEffect(() => {
+        async function getHomes() {
+            setLoading(true);
+            try {
+                let response = await serverAPI.get('/homesByPharmacy');
+                const Items = response.data.map((item, index) => {
+                    return (<Picker.Item key={item.ID} label={item.name} value={{ ID: item.ID, address: item.address, name: item.name }} />);
+                });
+                Items.unshift(<Picker.Item key={0} label="Select a Home to deliver to" value={null} enabled={false} />)
+                setPickItems(Items);
+                setLoading(false);
+            } catch (e) {
+                //There is a condition, since this reacts to changes in state (login/logout) that it will attempt to grab this when a person logs out, and since that route
+                // is protected it will throw a 401. This just handles this rejection. it swallows it.
+                //console.log(`Got error while grabbing homes: ${e}`);
+                setLoading(false);
+                return;
+            }
+        }
+        getHomes();
+    }, []);
+
     useEffect(() => {
         async function getHomes() {
             setLoading(true);

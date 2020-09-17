@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Button, View, Text, StyleSheet, FlatList, Modal, TouchableOpacity, RefreshControl } from 'react-native';
+import { ActivityIndicator, Button, View, Text, StyleSheet, FlatList, Modal, TouchableOpacity, RefreshControl } from 'react-native';
 import { ListItem } from 'react-native-elements';
+import serverAPI from '../api/server';
 
 const FeedScreen = (props) => {
 
@@ -8,35 +9,60 @@ const FeedScreen = (props) => {
     const [selectedItem, setSelectedItem] = useState('');
     const [modalVis, setModalVis] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    //Helper Function, to be deleted later
-    function wait(timeout) {
-        return new Promise(resolve => {
-            setTimeout(resolve, timeout);
-        });
-    }
+
     useEffect(() => {
-        //This is a fixture for now, but in future this would be where feed is populated.
         // Will need a hook to onnavigate to this page to do a auto-refresh.
-        const fixture = [
-            { id: '0', author: 'Andrew Caines', date: '06/18/2020', priority: 'high', title: 'Travel Warning', details: 'A fake accident has happened on a fake road, please take fake precautions' },
-            { id: '1', author: 'Andrew Caines', date: '06/19/2020', priority: 'low', title: 'Holiday Notice', details: 'Its a holiday next week, so plan accordingly, things will be busy etc' },
-            { id: '2', author: 'Andrew Caines', date: '06/20/2020', priority: 'high', title: 'South Edmonton Homes', details: 'A an outbreak of Ebola, so PPE is required for deliveries' },
-            { id: '3', author: 'Andrew Caines', date: '06/21/2020', priority: 'low', title: 'Late Delivery', details: 'Dont bang on windows when doing late night deliveries, these are old peopole!!!!' },
-            { id: '4', author: 'Andrew Caines', date: '06/22/2020', priority: 'low', title: 'And a another thing...', details: 'I know what you did last summer....' },
-        ];
-        setFeed(fixture);
+        /*{
+            "id": 1,
+            "date_created": "2020-07-22T14:14:50.130Z",
+            "title": "First Test Feed",
+            "details": "This is a test feed item, that will be set to High Priority. This is just a bunch of junk to test it out...",
+            "high_priority": true,
+            "author": "Andrew Caines",
+            "archived": false,
+            "active": true,
+            "date_modified": null
+        }
+        */
+        async function getFeed() {
+            let result = await serverAPI.get('newsFeed');
+            if (result.data.success) {
+                console.log(result.data.payload)
+                setFeed(result.data.payload);
+                setLoading(false);
+            } else {
+                //TODO: Handle load error!
+                setLoading(false);
+            }
+
+        }
+        setLoading(true);
+        getFeed();
+        //Need to return a function to cancel Axios!
     }, []);
 
     const onRefresh = React.useCallback(() => {
-        //This would be where you go out and grab the Feed data!
-        wait(5000).then(() => setRefreshing(false));
+        async function getFeed() {
+            let result = await serverAPI.get('newsFeed');
+            if (result.data.success) {
+                setFeed(result.data.payload);
+                setLoading(false);
+            } else {
+                //TODO: Handle load error!
+                setLoading(false);
+            }
+
+        }
+        setLoading(true);
+        getFeed();
     }, [refreshing]);
 
-    const RowDisplay = ({ date, title, id, priority }) => {
+    const RowDisplay = ({ date_created, title, id, high_priority }) => {
 
         const SubTitle = () => {
-            return priority === 'high' ? <Text style={{ fontWeight: '100', color: 'red' }}>High Priority, please review</Text> : null
+            return high_priority ? <Text style={{ fontWeight: '100', color: 'red' }}>High Priority, please review</Text> : null
         }
 
         return (
@@ -49,40 +75,54 @@ const FeedScreen = (props) => {
                 <ListItem
                     chevron
                     bottomDivider
-                    title={`${date} - ${title}`}
+                    title={`${new Date(date_created).toLocaleDateString('en-us')} - ${title}`}
                     key={id}
                     subtitle={SubTitle()}
                 />
             </TouchableOpacity>
         );
     };
-    return (
-        <View>
-            <FlatList
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                data={feed}
-                keyExtractor={item => item.id}
-                renderItem={({ item }) => <RowDisplay date={item.date} title={item.title} id={item.id} priority={item.priority} />}
 
-            />
-            <View style={styles.centeredView}>
-                <Modal
-                    visible={modalVis}
-                    transparent={true}
-                    onRequestClose={() => setModalVis(false)}
-                >
+    const RenderedView = () => {
+        if (loading) {
+            return (
+                <View>
+                    <ActivityIndicator size="large" />
+                </View>
+            );
+        } else {
+            return (
+                <View>
+                    <FlatList
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                        data={feed}
+                        keyExtractor={item => item.id.toString()}
+                        renderItem={({ item }) => <RowDisplay date_created={item.date_created} title={item.title} id={item.id} high_priority={item.high_priority} />}
+
+                    />
                     <View style={styles.centeredView}>
-                        <View style={styles.modalView}>
-                            <Text style={styles.modalText}>{selectedItem.author}</Text>
-                            <Text>Message: {selectedItem.details}</Text>
-                            <Button title="ok" onPress={() => setModalVis(false)} />
-                        </View>
+                        <Modal
+                            visible={modalVis}
+                            transparent={true}
+                            onRequestClose={() => setModalVis(false)}
+                        >
+                            <View style={styles.centeredView}>
+                                <View style={styles.modalView}>
+                                    <Text style={styles.modalText}>{selectedItem.author}</Text>
+                                    <Text>Message: {selectedItem.details}</Text>
+                                    <Button title="ok" onPress={() => setModalVis(false)} />
+                                </View>
+                            </View>
+                        </Modal>
                     </View>
-                </Modal>
-            </View>
-        </View>
-    );
+                </View>
+            );
+        }
+    }
+
+    return (<RenderedView />);
 }
+
 const styles = StyleSheet.create({
     centeredView: {
         flex: 1,
