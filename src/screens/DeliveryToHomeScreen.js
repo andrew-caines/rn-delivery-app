@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useContext, useReducer } from 'react';
-import { View, StyleSheet, Modal, Image, ToastAndroid, Vibration, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Modal, Image, ToastAndroid, Vibration, TouchableOpacity, ActivityIndicator,Pressable } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Button, Input, Text, } from 'react-native-elements';
 import { Picker } from '@react-native-community/picker';
 import { Feather } from '@expo/vector-icons';
@@ -36,7 +37,7 @@ function reducer(state, action) {
             return state;
     }
 }
-async function getHomes() { 
+async function getHomes() {
 
 }
 
@@ -73,28 +74,34 @@ const DeliveryToHome = ({ navigation }) => {
         requestPermissions();
     }, []);
 
-    //On Did Mount TODO: Reduce the onMount and on refresh to a single function.
-    useEffect(() => {
-        async function getHomes() {
-            setLoading(true);
-            try {
-                let response = await serverAPI.get('/homesByPharmacy');
-                const Items = response.data.map((item, index) => {
-                    return (<Picker.Item key={item.ID} label={item.name} value={{ ID: item.ID, address: item.address, name: item.name }} />);
-                });
-                Items.unshift(<Picker.Item key={0} label="Select a Home to deliver to" value={null} enabled={false} />)
-                setPickItems(Items);
-                setLoading(false);
-            } catch (e) {
-                //There is a condition, since this reacts to changes in state (login/logout) that it will attempt to grab this when a person logs out, and since that route
-                // is protected it will throw a 401. This just handles this rejection. it swallows it.
-                //console.log(`Got error while grabbing homes: ${e}`);
-                setLoading(false);
-                return;
+    useFocusEffect(
+        React.useCallback(() => {
+            const source = serverAPI.CancelToken.source();
+            async function getHomes() {
+                setLoading(true);
+                try {
+                    let response = await serverAPI.get('/homesByPharmacy');
+                    const Items = response.data.map((item, index) => {
+                        return (<Picker.Item key={item.ID} label={item.name} value={{ ID: item.ID, address: item.address, name: item.name }} />);
+                    });
+                    Items.unshift(<Picker.Item key={0} label="Select a Home to deliver to" value={null} enabled={false} />)
+                    setPickItems(Items);
+                    setLoading(false);
+                } catch (e) {
+                    //There is a condition, since this reacts to changes in state (login/logout) that it will attempt to grab this when a person logs out, and since that route
+                    // is protected it will throw a 401. This just handles this rejection. it swallows it.
+                    //console.log(`Got error while grabbing homes: ${e}`);
+                    setLoading(false);
+                    return;
+                }
             }
-        }
-        getHomes();
-    }, []);
+            getHomes();
+            return () => {
+                console.log(`🌪️ Component unmounted with live data request. 🚫 Cancelling request`);
+                source.cancel();
+            }
+        }, [])
+    );
 
     useEffect(() => {
         async function getHomes() {
@@ -196,6 +203,10 @@ const DeliveryToHome = ({ navigation }) => {
 
     }
 
+    const clearSignatureData = () => {
+        dispatch({ type: 'updateValue', payload: { key: 'signature', value: null } });
+    }
+
     const handleRefused = () => {
         //set the client data to globalState, then navigate to refused page
         if ((state?.home?.name && state.home.name !== '') && (state?.home?.address && state.home.address !== '')) {
@@ -254,7 +265,11 @@ const DeliveryToHome = ({ navigation }) => {
             />
 
             {state.signature ?
-                <Image resizeMode='contain' source={{ uri: state.signature }} style={{ width: 400, height: 200 }} />
+                <>
+                    <TouchableOpacity onLongPress={clearSignatureData}>
+                        <Image resizeMode='contain' source={{ uri: state.signature }} style={{ width: 400, height: 200 }} />
+                    </TouchableOpacity>
+                </>
                 :
                 <><Button title="Capture Signature" onPress={() => dispatch({ type: 'toggleSignatureModal' })} />
                     <Modal transparent visible={state.sigModalVisible}>
@@ -309,7 +324,7 @@ const DeliveryToHome = ({ navigation }) => {
                     <View style={styles.modalView}>
                         <Feather name="alert-triangle" size={72} color="black" />
                         <Text>Location Permissions are Required to use this Application</Text>
-                        <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings > Apps > CareRX Delivery settings.</Text>
+                        <Text>You you clicked Deny in Error, restart the Application and try again, or grant Permissions in the Settings .. Apps .. CareRX Delivery settings.</Text>
                         <Button title="Understood" onPress={() => setLocModalVis(false)} />
                     </View>
                 </View>
@@ -344,7 +359,7 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
         justifyContent: 'center',
         alignContent: 'center'
-    }
+    },
 });
 
 export default DeliveryToHome;
