@@ -1,2 +1,14 @@
 Build with play store compat 
 expo build:android -t app-bundle
+
+
+To make sure the OTA update works, inside app.json increment version Code 
+ "android": {
+      "package": "ca.carerx.deliveryapp",
+      "versionCode": 8,  <--- INCREMENT ON EACH RELEASE
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE"
+      ]
+    }
