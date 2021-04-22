@@ -61,7 +61,7 @@ const DeliveryToHome = ({ navigation }) => {
     useEffect(() => {
         //A quick check to see if Locations is enabled!
         async function requestPermissions() {
-            let { status } = await Location.requestPermissionsAsync();
+            let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 //Show a popup letting them know Location is required!
                 setLocationPermission(false);

@@ -15,7 +15,7 @@ const Login = ({ navigation }) => {
 
     const retryPermissons = async () => {
 
-        let { status } = await Location.requestPermissionsAsync({});
+        let { status } = await Location.requestForegroundPermissionsAsync({});
         if (status !== 'granted') {
             const location = await Location.getCurrentPositionAsync({});
             setLocationPermission(true);

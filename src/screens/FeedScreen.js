@@ -73,12 +73,19 @@ const FeedScreen = (props) => {
                 console.log(selectedItem)
             }}>
                 <ListItem
-                    chevron
                     bottomDivider
-                    title={`${new Date(date_created).toLocaleDateString('en-us')} - ${title}`}
                     key={id}
-                    subtitle={SubTitle()}
-                />
+                >
+                    <ListItem.Content>
+                        <ListItem.Title>
+                            <Text>{`${new Date(date_created).toLocaleDateString('en-us')} - ${title}`}</Text>
+                        </ListItem.Title>
+                        <ListItem.Subtitle>
+                            {SubTitle()}
+                        </ListItem.Subtitle>
+                    </ListItem.Content>
+                    <ListItem.Chevron />
+                </ListItem>
             </TouchableOpacity>
         );
     };

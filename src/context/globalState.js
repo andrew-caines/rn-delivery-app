@@ -48,7 +48,7 @@ export const Provider = (props) => {
         //Check to see if server is online.
         //check to see if location services are turned on and have permission
         async function checkPermissions() {
-            let { status } = await Location.requestPermissionsAsync();
+            let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 dispatch({ type: 'setLocationPermission', payload: false });
             } else {

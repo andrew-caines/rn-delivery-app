@@ -8,7 +8,7 @@ const ResolveAuth = ({ navigation }) => {
     const { tryLocalLogin, setLocationPermission } = useContext(GlobalStateContext);
     useEffect(() => {
         (async () => {
-            let { status } = await Location.requestPermissionsAsync();
+            let { status } = await Location.requestForegroundPermissionsAsync();
         })();
         //Look for cached login token & request Location Permission!
         setLocationPermission();
